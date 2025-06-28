@@ -1,0 +1,4 @@
+NOTE TO SELF:
+
+Make ABSOLUTE SURE that you delete the "0/0.0.0.0" or the "Allow all IPs" option in 
+MongoDB, and then follow the other steps to get a production solution.
