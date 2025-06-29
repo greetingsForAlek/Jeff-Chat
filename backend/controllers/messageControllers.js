@@ -52,3 +52,5 @@ const sendMessage = asyncHandler(async (req, res) => {
 		throw new Error(error.message);
 	}
 });
+
+module.exports = { sendMessage };
