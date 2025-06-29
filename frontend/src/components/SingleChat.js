@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ChatState } from "../Context/ChatProvider";
 import { Box, Text } from "@chakra-ui/layout";
 import {
@@ -32,6 +32,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 	const [socketConnected, setSocketConnected] = useState(false);
 	const [typing, setTyping] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
+
+	const fileInputRef = useRef(null);
 
 	const defaultOptions = {
 		loop: true,
@@ -68,7 +70,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 				config
 			);
 
-			// console.log(messages);
 			setMessages(data);
 			setLoading(false);
 
@@ -136,8 +137,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 					config
 				);
 
-				// console.log(data);
-
 				socket.emit("new message", data);
 				setMessages([...messages, data]);
 			} catch (error) {
@@ -175,6 +174,67 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 				setTyping(false);
 			}
 		}, timerLength);
+	};
+
+	const handleImageChange = async (e) => {
+		const file = e.target.files[0];
+		if (!file) return;
+
+		// 1. Upload to Cloudinary
+		const data = new FormData();
+		data.append("file", file);
+		data.append("upload_preset", "Jeff-Chat"); // Your Cloudinary preset
+		data.append("cloud_name", "dhwmksior"); // Your Cloudinary cloud name
+
+		try {
+			const res = await fetch(
+				"https://api.cloudinary.com/v1_1/dhwmksior/image/upload",
+				{
+					method: "POST",
+					body: data,
+				}
+			);
+			const imgData = await res.json();
+			if (!imgData.url) {
+				throw new Error("Image upload failed");
+			}
+
+			// 2. Send as a message
+			const config = {
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${user.token}`,
+				},
+			};
+			const { data: messageData } = await axios.post(
+				"/api/message",
+				{
+					content: "", // No text, just image
+					chatId: selectedChat._id,
+					image: imgData.url, // <-- Add this field
+				},
+				config
+			);
+
+			socket.emit("new message", messageData);
+			setMessages((prev) => [...prev, messageData]);
+			toast({
+				title: "Image sent!",
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+				position: "bottom",
+			});
+		} catch (error) {
+			toast({
+				title: "Image upload failed",
+				description: error.message,
+				status: "error",
+				duration: 5000,
+				isClosable: true,
+				position: "bottom",
+			});
+		}
 	};
 
 	return (
@@ -260,13 +320,30 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 							) : (
 								<></>
 							)}
-							<Input
-								variant="filled"
-								bg="#E0E0E0"
-								placeholder="Say Hi..."
-								onChange={typingHandler}
-								value={newMessage}
-							/>
+							<Box display="flex" alignItems="center">
+								<Input
+									variant="filled"
+									bg="#E0E0E0"
+									placeholder="Say Hi..."
+									onChange={typingHandler}
+									value={newMessage}
+								/>
+								<input
+									type="file"
+									accept="image/*"
+									style={{ display: "none" }}
+									ref={fileInputRef}
+									onChange={handleImageChange}
+								/>
+								<IconButton
+									icon={<i className="fas fa-image"></i>}
+									onClick={() => fileInputRef.current.click()}
+									variant="ghost"
+									size="sm"
+									ml={2}
+									aria-label="Send Image"
+								/>
+							</Box>
 						</FormControl>
 					</Box>
 				</>

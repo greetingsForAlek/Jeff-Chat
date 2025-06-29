@@ -5,9 +5,10 @@ const Chat = require("../models/chatModel");
 const Notification = require("../models/notifModel");
 
 const sendMessage = asyncHandler(async (req, res) => {
-	const { content, chatId } = req.body;
+	const { content, chatId, image } = req.body; // <-- add image
 
-	if (!content || !chatId) {
+	if ((!content && !image) || !chatId) {
+		// allow either content or image
 		console.log("Invalid data passed into request");
 		return res.sendStatus(400);
 	}
@@ -15,6 +16,7 @@ const sendMessage = asyncHandler(async (req, res) => {
 	var newMessage = {
 		sender: req.user._id,
 		content: content,
+		image: image, // <-- add image
 		chat: chatId,
 	};
 
@@ -32,7 +34,7 @@ const sendMessage = asyncHandler(async (req, res) => {
 			latestMessage: message,
 		});
 
-		// NOTIFICATION DATABASE STUFF IDK VERY PROFFESSIONAL
+		// NOTIFICATION DATABASE STUFF
 		const chat = message.chat;
 		for (const user of chat.users) {
 			if (user._id.toString() !== req.user._id.toString()) {
@@ -50,18 +52,3 @@ const sendMessage = asyncHandler(async (req, res) => {
 		throw new Error(error.message);
 	}
 });
-
-const allMessages = asyncHandler(async (req, res) => {
-	try {
-		const messages = await Message.find({ chat: req.params.chatId })
-			.populate("sender", "name pic email")
-			.populate("chat");
-
-		res.json(messages);
-	} catch (error) {
-		res.status(400);
-		throw new Error(error.message);
-	}
-});
-
-module.exports = { sendMessage, allMessages };
