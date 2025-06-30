@@ -81,7 +81,25 @@ const ScrollableChat = ({ messages }) => {
 									wordBreak: "break-word",
 								}}
 							>
-								{m.image ? (
+								{m.file && m.file.url ? (
+									<a
+										href={m.file.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										download
+									>
+										<Button
+											leftIcon={
+												<i className="fas fa-file"></i>
+											}
+											colorScheme="blue"
+											size="sm"
+											mt={2}
+										>
+											{m.file.name || "Download file"}
+										</Button>
+									</a>
+								) : m.image ? (
 									<img
 										src={m.image}
 										alt="sent"

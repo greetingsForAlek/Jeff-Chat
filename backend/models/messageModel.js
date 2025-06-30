@@ -4,7 +4,11 @@ const messageModel = mongoose.Schema(
 	{
 		sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 		content: { type: String, trim: true },
-		image: { type: String }, // <-- Add this line
+		image: { type: String },
+		file: {
+			url: { type: String },
+			name: { type: String },
+		},
 		chat: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
 	},
 	{

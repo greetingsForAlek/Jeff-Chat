@@ -7,6 +7,7 @@ import {
 	Input,
 	Spinner,
 	useToast,
+	Button,
 } from "@chakra-ui/react";
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import { getSender, getSenderFull } from "../config/ChatLogics";
@@ -34,6 +35,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 	const [isTyping, setIsTyping] = useState(false);
 
 	const fileInputRef = useRef(null);
+	const fileUploadRef = useRef(null);
 
 	const defaultOptions = {
 		loop: true,
@@ -180,11 +182,10 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 		const file = e.target.files[0];
 		if (!file) return;
 
-		// 1. Upload to Cloudinary
 		const data = new FormData();
 		data.append("file", file);
-		data.append("upload_preset", "Jeff-Chat"); // Your Cloudinary preset
-		data.append("cloud_name", "dhwmksior"); // Your Cloudinary cloud name
+		data.append("upload_preset", "Jeff-Chat");
+		data.append("cloud_name", "dhwmksior");
 
 		try {
 			const res = await fetch(
@@ -199,7 +200,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 				throw new Error("Image upload failed");
 			}
 
-			// 2. Send as a message
 			const config = {
 				headers: {
 					"Content-Type": "application/json",
@@ -209,9 +209,9 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 			const { data: messageData } = await axios.post(
 				"/api/message",
 				{
-					content: "", // No text, just image
+					content: "",
 					chatId: selectedChat._id,
-					image: imgData.url, // <-- Add this field
+					image: imgData.url,
 				},
 				config
 			);
@@ -228,6 +228,62 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 		} catch (error) {
 			toast({
 				title: "Image upload failed",
+				description: error.message,
+				status: "error",
+				duration: 5000,
+				isClosable: true,
+				position: "bottom",
+			});
+		}
+	};
+
+	const handleFileChange = async (e) => {
+		const file = e.target.files[0];
+		if (!file) return;
+
+		const data = new FormData();
+		data.append("file", file);
+		data.append("upload_preset", "Jeff-Chat");
+		data.append("cloud_name", "dhwmksior");
+
+		try {
+			const res = await fetch(
+				"https://api.cloudinary.com/v1_1/dhwmksior/raw/upload",
+				{
+					method: "POST",
+					body: data,
+				}
+			);
+			const fileData = await res.json();
+			if (!fileData.url) throw new Error("File upload failed");
+
+			const config = {
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${user.token}`,
+				},
+			};
+			const { data: messageData } = await axios.post(
+				"/api/message",
+				{
+					content: "",
+					chatId: selectedChat._id,
+					file: { url: fileData.url, name: file.name },
+				},
+				config
+			);
+			socket.emit("new message", messageData);
+			setMessages((prev) => [...prev, messageData]);
+			toast({
+				title: "File sent!",
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+				position: "bottom",
+			});
+		} catch (error) {
+			toast({
+				title: "File upload failed",
 				description: error.message,
 				status: "error",
 				duration: 5000,
@@ -328,6 +384,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 									onChange={typingHandler}
 									value={newMessage}
 								/>
+								{/* Image upload */}
 								<input
 									type="file"
 									accept="image/*"
@@ -342,6 +399,23 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 									size="sm"
 									ml={2}
 									aria-label="Send Image"
+								/>
+								{/* File upload */}
+								<input
+									type="file"
+									style={{ display: "none" }}
+									ref={fileUploadRef}
+									onChange={handleFileChange}
+								/>
+								<IconButton
+									icon={<i className="fas fa-paperclip"></i>}
+									onClick={() =>
+										fileUploadRef.current.click()
+									}
+									variant="ghost"
+									size="sm"
+									ml={2}
+									aria-label="Send File"
 								/>
 							</Box>
 						</FormControl>

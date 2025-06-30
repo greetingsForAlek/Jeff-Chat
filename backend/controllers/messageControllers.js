@@ -5,7 +5,7 @@ const Chat = require("../models/chatModel");
 const Notification = require("../models/notifModel");
 
 const sendMessage = asyncHandler(async (req, res) => {
-	const { content, chatId, image } = req.body; // <-- add image
+	const { content, chatId, image, file } = req.body; // <-- add image
 
 	if ((!content && !image) || !chatId) {
 		// allow either content or image
@@ -16,7 +16,8 @@ const sendMessage = asyncHandler(async (req, res) => {
 	var newMessage = {
 		sender: req.user._id,
 		content: content,
-		image: image, // <-- add image
+		image: image,
+		file: file,
 		chat: chatId,
 	};
 
